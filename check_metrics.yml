@@ -1,0 +1,29 @@
+name: Check Metrics in Changes
+
+on:
+  pull_request:
+    types: [ opened, synchronize, edited, ready_for_review ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Clone Infra-ci
+      run: |
+        git clone https://${{ secrets.REPO_USER }}:${{ secrets.REPO_CLONE }}@github.com/ottopia-tech/infra-ci.git
+        cd infra-ci/
+        git checkout RD-4356
+        git pull
+    - name: Run python script to check if metrics added to the repo
+      run: |
+        pip install -r ./infra-ci/track_metrics/requirements.txt
+        python3 ./infra-ci/track_metrics/metrics_check.py -rn '${{ github.event.repository.name }}' -pn ${{ github.event.number }} -t ${{ secrets.REPO_CLONE }}
+    - name: Remove Infra-ci
+      run: |
+        rm -rf infra-ci
